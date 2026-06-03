@@ -35,12 +35,12 @@ class ExponentialReward(Module):
 
         SW = s @ self.W
 
-        X, LU = torch.solve(torch.t(self.W),(torch.eye(self.state_dim, dtype=float_type).cuda() + SW) )
+        X = torch.linalg.solve((torch.eye(self.state_dim, dtype=float_type).cuda() + SW), torch.t(self.W))
 
         muR = torch.exp(-(m-self.t) @ torch.t(X) @ torch.t(m-self.t)/2) / \
                 torch.sqrt(torch.det(torch.eye(self.state_dim, dtype=float_type).cuda() + SW))
 
-        X, LU = torch.solve(torch.t(self.W),(torch.eye(self.state_dim, dtype=float_type).cuda() + 2 * SW) )
+        X = torch.linalg.solve((torch.eye(self.state_dim, dtype=float_type).cuda() + 2 * SW), torch.t(self.W))
 
         r2 =  torch.exp(-(m-self.t) @ torch.t(X) @ torch.t(m-self.t)) / \
                 torch.sqrt(torch.det(torch.eye(self.state_dim, dtype=float_type).cuda() + 2 * SW))

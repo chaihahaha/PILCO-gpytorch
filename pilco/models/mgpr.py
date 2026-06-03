@@ -151,11 +151,12 @@ class MGPR(torch.nn.Module):
         # L = psd_safe_cholesky(K + self.model.likelihood.noise[:,None]*batched_eye)
         # iK = torch.cholesky_solve(batched_eye, L)
         #work-around solution without cholesky_solve
-        iK, _ = torch.solve(batched_eye, K + self.model.likelihood.noise[:,None]*batched_eye)
+        K_noisy = K + self.model.likelihood.noise[:,None]*batched_eye
+        iK = torch.linalg.solve(K_noisy, batched_eye)
         Y_ = self.Y[:,:,None]
         # beta = torch.cholesky_solve(Y_, L)[:,:,0]
         #work-around solution without cholesky_solve
-        beta, _ = torch.solve(Y_, K + self.model.likelihood.noise[:,None]*batched_eye)
+        beta = torch.linalg.solve(K_noisy, Y_)
         beta = beta[:,:,0]
 
         return iK, beta
@@ -183,7 +184,7 @@ class MGPR(torch.nn.Module):
 
         # Redefine iN as in^T and t --> t^T
         # B is symmetric so its the same
-        t,_ = torch.solve(torch.transpose(iN,dim0=1,dim1=2), B)
+        t = torch.linalg.solve(B, torch.transpose(iN,dim0=1,dim1=2))
         t = torch.transpose(t, dim0=1,dim1=2)
 
         lb = torch.exp(-torch.sum(iN * t, -1)/2) * beta
@@ -205,7 +206,7 @@ class MGPR(torch.nn.Module):
         # TODO: change this block according to the PR of tensorflow. Maybe move it into a function?
         X = inp[None, :, :, :]/torch.pow(self.model.covar_module.base_kernel.lengthscale.squeeze(1)[:, None, None, :],2)
         X2 = -inp[:, None, :, :]/torch.pow(self.model.covar_module.base_kernel.lengthscale.squeeze(1)[None, :, None, :],2)
-        q_x, _ = torch.solve(s, R)
+        q_x = torch.linalg.solve(R, s)
         Q = q_x/2
         Xs = torch.sum(X @ Q * X, -1)
         X2s = torch.sum(X2 @ Q * X2, -1)
